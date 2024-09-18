@@ -1,8 +1,95 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Todo List";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
+<div class="container">
+    <h1 class="mt-4 mb-4">Todo List</h1>
     
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <input type="text" id="taskDescription" class="form-control" placeholder="Enter task description">
+        </div>
+        <div class="col-md-4">
+            <button id="addTask" class="btn btn-primary">Add Task</button>
+        </div>
+    </div>
+
+    <table class="table" id="taskTable">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Tasks will be inserted here -->
+        </tbody>
+    </table>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            loadTasks();
+
+            $('#addTask').click(function() {
+                var description = $('#taskDescription').val();
+                if (description) {
+                    addTask(description);
+                    $('#taskDescription').val('');
+                }
+            });
+
+            function loadTasks() {
+                $.ajax({
+                    url: '/tasks',
+                    method: 'GET',
+                    success: function(tasks) {
+                        $('#taskTable tbody').empty();
+                        tasks.forEach(function(task) {
+                            appendTaskToTable(task);
+                        });
+                    }
+                });
+            }
+
+            function addTask(description) {
+                $.ajax({
+                    url: '/tasks',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ description: description }),
+                    success: function(task) {
+                        appendTaskToTable(task);
+                    }
+                });
+            }
+
+            function deleteTask(id) {
+                $.ajax({
+                    url: '/tasks?id=' + id,
+                    method: 'DELETE',
+                    success: function() {
+                        $(`#task-${id}`).remove();
+                    }
+                });
+            }
+
+            function appendTaskToTable(task) {
+                $('#taskTable tbody').append(`
+                    <tr id="task-${task.id}">
+                        <td>${task.description}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm delete-task" data-id="${task.id}">Delete</button>
+                        </td>
+                    </tr>
+                `);
+            }
+
+            $(document).on('click', '.delete-task', function() {
+                var id = $(this).data('id');
+                deleteTask(id);
+            });
+        });
+    </script>
+}
